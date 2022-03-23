@@ -17,7 +17,7 @@ const Input = ({ buttonTitle }) => (
           // onChangeText={onChangeNumber}
           // value={}
           placeholder={buttonTitle}
-          keyboardType="numeric"
+          keyboardType="numbers-and-punctuation"
         />
       </View>
     </View>
@@ -32,6 +32,7 @@ const styles = StyleSheet.create({
     flex: 2,
     // backgroundColor: "#A5548C",
     justifyContent: "center",
+    marginTop: 10,
   },
   barcodeTop: {
     flex: 1,
