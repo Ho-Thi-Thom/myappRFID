@@ -13,6 +13,9 @@ import SelectDropdown from "react-native-select-dropdown";
 import Input from "./components/Input";
 import Item from "./components/Item";
 import Dialog from "react-native-dialog";
+
+const STYLES = ["default", "dark-content", "light-content"];
+const TRANSITIONS = ["fade", "slide", "none"];
 export default function App() {
   // const [hidden, setHidden] = useState(false);
   const [warehouses, setWarehouses] = useState([
@@ -22,7 +25,6 @@ export default function App() {
     "Ireland",
   ]);
   const [visible, setVisible] = useState(false);
-  //
   const [listData, setListData] = useState([
     {
       id: "bd7acbea-c1b1-46c2-aed5-3ad53abb28ba",
@@ -40,10 +42,23 @@ export default function App() {
       taisan: "Third Item 2",
     },
   ]);
+  const [hidden, setHidden] = useState(false);
+  const [statusBarStyle, setStatusBarStyle] = useState(STYLES[0]);
+  const [statusBarTransition, setStatusBarTransition] = useState(
+    TRANSITIONS[0]
+  );
   const renderItem = ({ item }) => <Item item={item} />;
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar
+        animated={true}
+        backgroundColor="#61dafb"
+        barStyle={statusBarStyle}
+        showHideTransition={statusBarTransition}
+        hidden={hidden}
+      />
+
       {/* warehouse */}
       <View style={styles.warehouse}>
         <View style={styles.warehouseLeft}>
