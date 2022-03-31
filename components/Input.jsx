@@ -1,6 +1,6 @@
 import { Button, Text, TextInput, View, StyleSheet, Image } from "react-native";
 
-const Input = ({ buttonTitle }) => (
+const Input = ({ buttonTitle, onChange, value }) => (
   <View style={styles.barcode}>
     <View style={styles.barcodeTop}>
       <View style={styles.barcodeTopImage}>
@@ -14,8 +14,8 @@ const Input = ({ buttonTitle }) => (
       <View style={styles.barcodeTopInputText}>
         <TextInput
           style={styles.input}
-          // onChangeText={onChangeNumber}
-          // value={}
+          onChangeText={onChange}
+          value={value}
           placeholder={buttonTitle}
           keyboardType="numbers-and-punctuation"
         />
@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
     // backgroundColor: "#A5548C",
     justifyContent: "center",
     marginTop: 10,
+    paddingHorizontal: 5,
   },
   barcodeTop: {
     flex: 1,
@@ -53,13 +54,12 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    width: 250,
+    width: "100%",
     borderBottomWidth: 1,
     padding: 10,
   },
   input2: {
     height: 40,
-    width: 300,
     borderBottomWidth: 1,
     padding: 10,
     color: "gray",

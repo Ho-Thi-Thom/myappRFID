@@ -15,17 +15,15 @@ export default function Item({ item }) {
 }
 const styles = StyleSheet.create({
   item: {
-    flex: 1,
-    // backgroundColor: "#CFEBF7",
+    // width: 200,
+    // backgroundColor: "red",
     padding: 5,
-    marginVertical: 8,
-    marginHorizontal: 8,
+    margin: 8,
     flexDirection: "row",
+    justifyContent: "space-between",
   },
   title: {
-    flex: 1,
     fontSize: 18,
-    marginLeft: 5,
     color: "black",
   },
 });

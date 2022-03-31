@@ -8,40 +8,20 @@ import {
   Button,
   FlatList,
 } from "react-native";
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import SelectDropdown from "react-native-select-dropdown";
+import Dialog from "react-native-dialog";
 import Input from "./components/Input";
 import Item from "./components/Item";
-import Dialog from "react-native-dialog";
+import client from "./sanity/config";
+import { dataDropdown, dataRFIDList, STYLES, TRANSITIONS } from "./constants";
+import { GET_PRODUCT } from "./sanity/query";
+import { styles } from "./styles";
 
-const STYLES = ["default", "dark-content", "light-content"];
-const TRANSITIONS = ["fade", "slide", "none"];
 export default function App() {
-  // const [hidden, setHidden] = useState(false);
-  const [warehouses, setWarehouses] = useState([
-    "Egypt",
-    "Canada",
-    "Australia",
-    "Ireland",
-  ]);
+  const [warehouses, setWarehouses] = useState(dataDropdown);
   const [visible, setVisible] = useState(false);
-  const [listData, setListData] = useState([
-    {
-      id: "bd7acbea-c1b1-46c2-aed5-3ad53abb28ba",
-      rfid: "First Item 1",
-      taisan: "First Item 2",
-    },
-    {
-      id: "3ac68afc-c605-48d3-a4f8-fbd91aa97f63",
-      rfid: "Second Item 1",
-      taisan: "Second Item 2",
-    },
-    {
-      id: "58694a0f-3da1-471f-bd96-145571e29d72",
-      rfid: "Third Item 1",
-      taisan: "Third Item 2",
-    },
-  ]);
+  const [listData, setListData] = useState(dataRFIDList);
   const [hidden, setHidden] = useState(false);
   const [statusBarStyle, setStatusBarStyle] = useState(STYLES[0]);
   const [statusBarTransition, setStatusBarTransition] = useState(
@@ -49,6 +29,48 @@ export default function App() {
   );
   const renderItem = ({ item }) => <Item item={item} />;
 
+  useEffect(() => {
+    client
+      .fetch(GET_PRODUCT)
+      .then((data) => {
+        setListData(
+          data.map(({ _id, name, price }) => ({
+            id: _id,
+            rfid: name,
+            taisan: price,
+          }))
+        );
+      })
+      .catch((err) => console.log({ err }));
+  }, []);
+
+  const [inputs, setInputs] = useState({
+    input1: "",
+    input2: "",
+  });
+
+  const handleChange = (type, value) => {
+    setInputs({ ...inputs, [type]: value });
+  };
+
+  const handleAdd = () => {
+    client
+      .createIfNotExists({
+        _id: "123",
+        _type: "product",
+        name: inputs.input1,
+        price: Number(inputs.input2),
+      })
+      .then((data) => console.log("success", data))
+      .catch((err) => console.log(err));
+  };
+  const handleEdit = () => {
+    client.createOrReplace({
+      _id: inputs.input2,
+      _type: "product",
+      name: inputs.input1,
+    });
+  };
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -71,6 +93,7 @@ export default function App() {
         </View>
         <View style={styles.warehouseRight}>
           <SelectDropdown
+            buttonStyle={{ width: "100%" }}
             data={warehouses}
             onSelect={(selectedItem, index) => {
               console.log(selectedItem, index);
@@ -81,11 +104,19 @@ export default function App() {
       {/* warehouse */}
 
       {/* barcodeRFID */}
-      <Input buttonTitle="RFID barcode" />
+      <Input
+        buttonTitle="RFID barcode"
+        value={inputs.input1}
+        onChange={(value) => handleChange("input1", value)}
+      />
       {/* barcodeRFID */}
 
       {/* barcodeProperty */}
-      <Input buttonTitle="Property barcode" />
+      <Input
+        buttonTitle="Property barcode"
+        value={inputs.input2}
+        onChange={(value) => handleChange("input2", value)}
+      />
       {/* barcodeProperty */}
 
       {/* notification */}
@@ -109,121 +140,30 @@ export default function App() {
         <View>
           <Button title="Xem list" onPress={() => setVisible(true)} />
         </View>
-        <Button title="Reset" />
+        <Button title="Reset" onPress={handleEdit} />
       </View>
       {/* button */}
 
       {/* dialog */}
-      <Dialog.Container visible={visible} style={styles.container}>
-        <View style={styles.title}>
-          <Dialog.Title style={{ color: "#0054A5", fontWeight: "bold" }}>
-            Danh sách kết quả Mapping
-          </Dialog.Title>
-        </View>
-        <View style={styles.flatlist}>
+      <Dialog.Container visible={visible}>
+        <Dialog.Title style={styles.title}>
+          Danh sách kết quả Mapping
+        </Dialog.Title>
+        <Dialog.Description style={styles.flatlist}>
           <FlatList
+            style={{ width: 250 }}
             data={listData}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
           />
-        </View>
-        <View style={styles.dialogButton}>
-          <Dialog.Button
-            label="Đóng"
-            style={{ fontWeight: "bold", color: "#0054A5" }}
-            onPress={() => setVisible(false)}
-          />
-        </View>
+        </Dialog.Description>
+        <Dialog.Button
+          label="Đóng"
+          style={styles.dialogButton}
+          onPress={() => setVisible(false)}
+        />
       </Dialog.Container>
       {/* dialog */}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  warehouse: {
-    // marginTop: 9,
-    flex: 1,
-    // backgroundColor: "#3E97CF",
-    justifyContent: "center",
-    flexDirection: "row",
-    backgroundColor: "#DEFCF9",
-  },
-  warehouseLeft: {
-    // backgroundColor: "#3557CF",
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 2,
-  },
-  warehouseRight: {
-    // backgroundColor: "#3E97CF",
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 4,
-  },
-  notification: {
-    flex: 2,
-    justifyContent: "center",
-    // backgroundColor: "#FE9539",
-    flexDirection: "column",
-  },
-  notificationTop: {
-    flex: 1,
-    // backgroundColor: "#FE9539",
-  },
-  notificationBottom: {
-    flex: 1,
-    // backgroundColor: "#f00",
-  },
-  textA: {
-    marginTop: 5,
-    fontWeight: "bold",
-    fontSize: 18,
-    color: "black",
-  },
-  textB: {
-    marginTop: 5,
-    fontWeight: "bold",
-    fontSize: 18,
-    color: "blue",
-    textAlign: "center",
-  },
-  button: {
-    flex: 2,
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    // backgroundColor: "#8CBA19",
-    flexDirection: "row",
-  },
-  tinyLogo: {
-    width: 50,
-    height: 50,
-    // padding: 5,
-  },
-  //
-  model: {
-    flex: 1,
-    backgroundColor: "#CFEBF7",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  title: {
-    alignItems: "center",
-    flex: 0.5,
-    borderBottomWidth: 1,
-  },
-  flatlist: {
-    marginTop: 5,
-    flex: 4,
-    borderBottomWidth: 1,
-  },
-  dialogButton: {
-    flex: 2,
-  },
-});
