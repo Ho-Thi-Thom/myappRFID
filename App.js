@@ -8,18 +8,18 @@ import {
   Button,
   FlatList,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import SelectDropdown from "react-native-select-dropdown";
 import Dialog from "react-native-dialog";
 import Input from "./components/Input";
 import Item from "./components/Item";
 import client from "./sanity/config";
 import { dataDropdown, dataRFIDList, STYLES, TRANSITIONS } from "./constants";
-import { GET_PRODUCT } from "./sanity/query";
+import { GET_PRODUCT, GET_WAREHOUSE } from "./sanity/query";
 import { styles } from "./styles";
 
 export default function App() {
-  const [warehouses, setWarehouses] = useState(dataDropdown);
+  const [warehouses, setWarehouses] = useState([]);
   const [visible, setVisible] = useState(false);
   const [listData, setListData] = useState(dataRFIDList);
   const [hidden, setHidden] = useState(false);
@@ -27,49 +27,59 @@ export default function App() {
   const [statusBarTransition, setStatusBarTransition] = useState(
     TRANSITIONS[0]
   );
+  const ware_house = useRef();
   const renderItem = ({ item }) => <Item item={item} />;
 
+  const [inputs, setInputs] = useState({
+    input1: "",
+    input2: "a9cd47bc-f717-440b-bc3d-9d1eb6f1460d",
+  });
+  const [outputs, setOutputs] = useState({
+    rfid: "",
+    property: "",
+  });
+  const [isSubmit1, setIsSubmit1] = useState(false);
+  const handleChange = (type, value) => {
+    setInputs({ ...inputs, [type]: value });
+  };
+  //
   useEffect(() => {
     client
-      .fetch(GET_PRODUCT)
+      .fetch(GET_WAREHOUSE)
       .then((data) => {
-        setListData(
-          data.map(({ _id, name, price }) => ({
+        setWarehouses(
+          data.map(({ _id, name }) => ({
             id: _id,
-            rfid: name,
-            taisan: price,
+            name: name,
           }))
         );
       })
       .catch((err) => console.log({ err }));
   }, []);
-
-  const [inputs, setInputs] = useState({
-    input1: "",
-    input2: "",
-  });
-
-  const handleChange = (type, value) => {
-    setInputs({ ...inputs, [type]: value });
-  };
-
-  const handleAdd = () => {
+  //
+  useEffect(() => {
     client
-      .createIfNotExists({
-        _id: "123",
-        _type: "product",
-        name: inputs.input1,
-        price: Number(inputs.input2),
+      .fetch(
+        `
+      *[_type == 'product'&& _id=="${inputs.input2}"] {
+          _id,
+          name,
+      }
+  `
+      )
+      .then((data) => {
+        data.length > 0
+          ? setOutputs({ ...outputs, property: data[0].name })
+          : setOutputs({ ...outputs, property: "" } && setIsSubmit1(false));
       })
-      .then((data) => console.log("success", data))
-      .catch((err) => console.log(err));
+      .catch((err) => console.log({ err }));
+  }, [isSubmit1]);
+  //
+  const handleSubmit1 = () => {
+    setIsSubmit1(true);
   };
-  const handleEdit = () => {
-    client.createOrReplace({
-      _id: inputs.input2,
-      _type: "product",
-      name: inputs.input1,
-    });
+  const handleSubmit2 = () => {
+    setIsSubmit1(true);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -80,7 +90,6 @@ export default function App() {
         showHideTransition={statusBarTransition}
         hidden={hidden}
       />
-
       {/* warehouse */}
       <View style={styles.warehouse}>
         <View style={styles.warehouseLeft}>
@@ -95,30 +104,33 @@ export default function App() {
           <SelectDropdown
             buttonStyle={{ width: "100%" }}
             data={warehouses}
-            onSelect={(selectedItem, index) => {
-              console.log(selectedItem, index);
+            rowTextForSelection={({ name }) => name}
+            onSelect={(item, index) => {
+              ware_house.current = item;
             }}
+            buttonTextAfterSelection={({ name }) => name}
           />
         </View>
       </View>
       {/* warehouse */}
-
       {/* barcodeRFID */}
       <Input
         buttonTitle="RFID barcode"
         value={inputs.input1}
         onChange={(value) => handleChange("input1", value)}
+        submit={handleSubmit1}
+        verify={outputs.rfid}
       />
       {/* barcodeRFID */}
-
       {/* barcodeProperty */}
       <Input
         buttonTitle="Property barcode"
         value={inputs.input2}
         onChange={(value) => handleChange("input2", value)}
+        submit={handleSubmit2}
+        verify={outputs.property}
       />
       {/* barcodeProperty */}
-
       {/* notification */}
       <View style={styles.notification}>
         <View style={styles.notificationTop}>
@@ -131,7 +143,6 @@ export default function App() {
         </View>
       </View>
       {/* notification */}
-
       {/* button */}
       <View style={styles.button}>
         <View>
@@ -140,10 +151,10 @@ export default function App() {
         <View>
           <Button title="Xem list" onPress={() => setVisible(true)} />
         </View>
-        <Button title="Reset" onPress={handleEdit} />
+        <Button title="Reset" />
+        {/* onPress={handleEdit} */}
       </View>
       {/* button */}
-
       {/* dialog */}
       <Dialog.Container visible={visible}>
         <Dialog.Title style={styles.title}>

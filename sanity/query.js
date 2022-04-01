@@ -5,3 +5,9 @@ export const GET_PRODUCT = `
         price,
     }
 `;
+export const GET_WAREHOUSE = `
+    *[_type == 'warehouse'] {
+        _id,
+        name,
+    }
+`;

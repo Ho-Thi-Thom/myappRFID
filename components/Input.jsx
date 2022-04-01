@@ -1,15 +1,25 @@
-import { Button, Text, TextInput, View, StyleSheet, Image } from "react-native";
+import {
+  Button,
+  Text,
+  TextInput,
+  View,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 
-const Input = ({ buttonTitle, onChange, value }) => (
+const Input = ({ buttonTitle, onChange, value, submit, verify }) => (
   <View style={styles.barcode}>
     <View style={styles.barcodeTop}>
       <View style={styles.barcodeTopImage}>
-        <Image
-          style={styles.tinyLogo}
-          source={{
-            uri: "https://upload.wikimedia.org/wikipedia/commons/a/af/M%C3%A3_QR.png",
-          }}
-        />
+        <TouchableOpacity onPress={submit}>
+          <Image
+            style={styles.tinyLogo}
+            source={{
+              uri: "https://upload.wikimedia.org/wikipedia/commons/a/af/M%C3%A3_QR.png",
+            }}
+          />
+        </TouchableOpacity>
       </View>
       <View style={styles.barcodeTopInputText}>
         <TextInput
@@ -22,7 +32,7 @@ const Input = ({ buttonTitle, onChange, value }) => (
       </View>
     </View>
     <View style={styles.barcodeBottom}>
-      <Text style={styles.input2}>Verify {buttonTitle}</Text>
+      <Text style={styles.input2}> {verify}</Text>
     </View>
   </View>
 );
