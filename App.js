@@ -15,11 +15,11 @@ import Input from "./components/Input";
 import Item from "./components/Item";
 import client from "./sanity/config";
 import { dataDropdown, dataRFIDList, STYLES, TRANSITIONS } from "./constants";
-import { GET_PRODUCT, GET_WAREHOUSE } from "./sanity/query";
+import { GET_NAME, GET_PRODUCT, GET_WAREHOUSE } from "./sanity/query";
 import { styles } from "./styles";
+import useQuery from "./hooks/useQuery";
 
 export default function App() {
-  const [warehouses, setWarehouses] = useState([]);
   const [visible, setVisible] = useState(false);
   const [listData, setListData] = useState(dataRFIDList);
   const [hidden, setHidden] = useState(false);
@@ -27,60 +27,111 @@ export default function App() {
   const [statusBarTransition, setStatusBarTransition] = useState(
     TRANSITIONS[0]
   );
+  const [content, setContent] = useState({ success: false, message: "" });
   const ware_house = useRef();
-  const renderItem = ({ item }) => <Item item={item} />;
+  const [mappingCount, setMappingCount] = useState(0);
+  const { data: warehouses } = useQuery(GET_WAREHOUSE);
 
   const [inputs, setInputs] = useState({
-    input1: "",
+    input1: "RFID" + ((Math.random() + 1) * 1000000).toFixed(),
     input2: "a9cd47bc-f717-440b-bc3d-9d1eb6f1460d",
   });
   const [outputs, setOutputs] = useState({
     rfid: "",
-    property: "",
+    property: { _id: "", name: "" },
   });
-  const [isSubmit1, setIsSubmit1] = useState(false);
+  const [isSubmit, setIsSubmit] = useState({
+    isSubmit1: false,
+    isSubmit2: false,
+  });
+  const [isSave, setIsSave] = useState(false);
+
   const handleChange = (type, value) => {
     setInputs({ ...inputs, [type]: value });
   };
+
+  useEffect(() => {
+    if (isSubmit.isSubmit2) {
+      setIsSubmit({ ...isSubmit, isSubmit2: false });
+      client
+        .fetch(GET_NAME, { abc: inputs.input2 })
+        .then((data) => {
+          data.length > 0
+            ? setOutputs({
+                ...outputs,
+                property: { _id: data[0]._id, name: data[0].name },
+              })
+            : setOutputs({ ...outputs, property: "" });
+        })
+        .catch((err) => console.log({ err }));
+    }
+  }, [isSubmit.isSubmit2]);
   //
   useEffect(() => {
-    client
-      .fetch(GET_WAREHOUSE)
-      .then((data) => {
-        setWarehouses(
-          data.map(({ _id, name }) => ({
-            id: _id,
-            name: name,
-          }))
-        );
-      })
-      .catch((err) => console.log({ err }));
-  }, []);
+    if (isSubmit.isSubmit1) {
+      setIsSubmit({ ...isSubmit, isSubmit1: false });
+      inputs.input1.length === 11 &&
+        inputs.input1.toLowerCase().startsWith("rfid") &&
+        setOutputs({ ...outputs, rfid: inputs.input1 });
+    }
+  }, [isSubmit.isSubmit1]);
   //
+  const handleSubmit = (type) => {
+    setIsSubmit({ ...isSubmit, [type]: true });
+  };
+  const handleReset = () => {
+    setInputs({
+      input1: "RFID" + ((Math.random() + 1) * 1000000).toFixed(),
+      input2: "a9cd47bc-f717-440b-bc3d-9d1eb6f1460d",
+    });
+    setOutputs({ rfid: "", property: { _id: "", name: "" } });
+  };
+  const handleSave = () => {
+    if (
+      outputs.property.name.length > 0 &&
+      outputs.rfid.length > 0 &&
+      ware_house.current
+    )
+      setIsSave(true);
+    // alert("helloabc");
+  };
   useEffect(() => {
-    client
-      .fetch(
-        `
-      *[_type == 'product'&& _id=="${inputs.input2}"] {
-          _id,
-          name,
-      }
-  `
-      )
-      .then((data) => {
-        data.length > 0
-          ? setOutputs({ ...outputs, property: data[0].name })
-          : setOutputs({ ...outputs, property: "" } && setIsSubmit1(false));
-      })
-      .catch((err) => console.log({ err }));
-  }, [isSubmit1]);
-  //
-  const handleSubmit1 = () => {
-    setIsSubmit1(true);
-  };
-  const handleSubmit2 = () => {
-    setIsSubmit1(true);
-  };
+    if (isSave) {
+      setContent({ success: false, message: "Đang tải..." });
+      client
+        .create({
+          _type: "mapping",
+          _id: outputs.rfid,
+          code_product: {
+            _type: "reference",
+            _ref: outputs.property._id,
+          },
+          warehouse: {
+            _type: "reference",
+            _ref: ware_house.current._id,
+          },
+        })
+        .then((res) => {
+          setListData((prev) => [
+            ...prev,
+            { rfid: res._id, property: res.code_product._ref },
+          ]);
+          setContent({ success: true, message: "Mapping thành công!" });
+          setMappingCount((prev) => prev + 1);
+        })
+        .catch((err) => {
+          setContent({ success: false, message: "Mapping không thành công!" });
+        });
+      setIsSave(false);
+    }
+  }, [isSave]);
+
+  // useEffect(() => {
+  //   client.delete({
+  //     query: '*[_type == "mapping"]',
+  //   });
+  // }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -107,6 +158,7 @@ export default function App() {
             rowTextForSelection={({ name }) => name}
             onSelect={(item, index) => {
               ware_house.current = item;
+              // console.log(item);
             }}
             buttonTextAfterSelection={({ name }) => name}
           />
@@ -118,7 +170,7 @@ export default function App() {
         buttonTitle="RFID barcode"
         value={inputs.input1}
         onChange={(value) => handleChange("input1", value)}
-        submit={handleSubmit1}
+        submit={() => handleSubmit("isSubmit1")}
         verify={outputs.rfid}
       />
       {/* barcodeRFID */}
@@ -127,32 +179,40 @@ export default function App() {
         buttonTitle="Property barcode"
         value={inputs.input2}
         onChange={(value) => handleChange("input2", value)}
-        submit={handleSubmit2}
-        verify={outputs.property}
+        submit={() => handleSubmit("isSubmit2")}
+        verify={outputs.property.name}
       />
       {/* barcodeProperty */}
       {/* notification */}
       <View style={styles.notification}>
         <View style={styles.notificationTop}>
           <Text style={styles.textA}>Kết quả cập nhật mã tài sản RFID</Text>
-          <Text style={styles.textB}>nội dung</Text>
+          <Text
+            style={[styles.textB, { color: content.success ? "blue" : "red" }]}
+          >
+            {content.message}
+          </Text>
         </View>
         <View style={styles.notificationBottom}>
           <Text style={styles.textA}>Số thẻ mapping được</Text>
-          <Text style={[styles.textB, { color: "red" }]}>01</Text>
+          <Text style={[styles.textB, { color: "red" }]}>{mappingCount}</Text>
         </View>
       </View>
       {/* notification */}
       {/* button */}
       <View style={styles.button}>
         <View>
-          <Button title="Làm mới" />
+          <Button title="Reset" />
         </View>
         <View>
           <Button title="Xem list" onPress={() => setVisible(true)} />
         </View>
-        <Button title="Reset" />
-        {/* onPress={handleEdit} */}
+        <View>
+          <Button title="Làm mới" onPress={handleReset} />
+        </View>
+        <View>
+          <Button title="Lưu" onPress={handleSave} />
+        </View>
       </View>
       {/* button */}
       {/* dialog */}
@@ -164,8 +224,8 @@ export default function App() {
           <FlatList
             style={{ width: 250 }}
             data={listData}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <Item item={item} />}
+            keyExtractor={(item) => item.rfid}
           />
         </Dialog.Description>
         <Dialog.Button

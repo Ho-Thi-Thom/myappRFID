@@ -51,7 +51,6 @@ export const styles = StyleSheet.create({
     marginTop: 5,
     fontWeight: "bold",
     fontSize: 18,
-    color: "blue",
     textAlign: "center",
   },
   button: {
