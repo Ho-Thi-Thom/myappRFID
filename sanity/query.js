@@ -1,6 +1,7 @@
 export const GET_PRODUCT = `
     *[_type == 'product'] {
         _id,
+        barcode,
         name,
         price,
     }
@@ -13,8 +14,9 @@ export const GET_WAREHOUSE = `
 `;
 
 export const GET_NAME = `
-*[_type == 'product' && _id==$abc] {
+*[_type == 'product' && barcode.current==$abc] {
     _id,
+    barcode,
     name,
 }
 `;

@@ -34,11 +34,11 @@ export default function App() {
 
   const [inputs, setInputs] = useState({
     input1: "RFID" + ((Math.random() + 1) * 1000000).toFixed(),
-    input2: "a9cd47bc-f717-440b-bc3d-9d1eb6f1460d",
+    input2: "7867345452358",
   });
   const [outputs, setOutputs] = useState({
     rfid: "",
-    property: { _id: "", name: "" },
+    property: { _id: "", name: "", barcode: "" },
   });
   const [isSubmit, setIsSubmit] = useState({
     isSubmit1: false,
@@ -56,12 +56,20 @@ export default function App() {
       client
         .fetch(GET_NAME, { abc: inputs.input2 })
         .then((data) => {
+          // console.log(data);
           data.length > 0
             ? setOutputs({
                 ...outputs,
-                property: { _id: data[0]._id, name: data[0].name },
+                property: {
+                  _id: data[0]._id,
+                  name: data[0].name,
+                  barcode: data[0].barcode.current,
+                },
               })
-            : setOutputs({ ...outputs, property: "" });
+            : setOutputs({
+                ...outputs,
+                property: { barcode: "", _id: "", name: "" },
+              });
         })
         .catch((err) => console.log({ err }));
     }
@@ -82,9 +90,9 @@ export default function App() {
   const handleReset = () => {
     setInputs({
       input1: "RFID" + ((Math.random() + 1) * 1000000).toFixed(),
-      input2: "a9cd47bc-f717-440b-bc3d-9d1eb6f1460d",
+      input2: "7867345452358",
     });
-    setOutputs({ rfid: "", property: { _id: "", name: "" } });
+    setOutputs({ rfid: "", property: { _id: "", name: "", barcode: "" } });
   };
   const handleSave = () => {
     if (
@@ -93,7 +101,6 @@ export default function App() {
       ware_house.current
     )
       setIsSave(true);
-    // alert("helloabc");
   };
   useEffect(() => {
     if (isSave) {
@@ -114,7 +121,7 @@ export default function App() {
         .then((res) => {
           setListData((prev) => [
             ...prev,
-            { rfid: res._id, property: res.code_product._ref },
+            { rfid: res._id, property: outputs.property.barcode },
           ]);
           setContent({ success: true, message: "Mapping thành công!" });
           setMappingCount((prev) => prev + 1);
