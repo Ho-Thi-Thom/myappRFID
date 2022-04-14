@@ -1,6 +1,5 @@
 import {
   SafeAreaView,
-  StyleSheet,
   Text,
   View,
   Image,
@@ -14,10 +13,11 @@ import Dialog from "react-native-dialog";
 import Input from "./components/Input";
 import Item from "./components/Item";
 import client from "./sanity/config";
-import { dataDropdown, dataRFIDList, STYLES, TRANSITIONS } from "./constants";
-import { GET_NAME, GET_PRODUCT, GET_WAREHOUSE } from "./sanity/query";
+import { dataRFIDList, STYLES, TRANSITIONS } from "./constants";
+import { GET_NAME, GET_WAREHOUSE } from "./sanity/query";
 import { styles } from "./styles";
 import useQuery from "./hooks/useQuery";
+import C72RfidScanner from "c72-rfid-scanner";
 
 export default function App() {
   const [visible, setVisible] = useState(false);
